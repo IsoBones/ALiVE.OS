@@ -884,6 +884,25 @@
     <Chinesesimp>一个平民最多可以得到多少人道主义口粮/水瓶</Chinesesimp>
 </Key>
 <!-- AI-translated; native-speaker review welcome -->
+<Key ID="STR_ALIVE_CIV_POP_ALLOW_AID_ANYONE">
+    <English>Allow Anyone To Give Aid:</English>
+    <Chinese>允許任何人發放援助:</Chinese>
+    <Chinesesimp>允许任何人发放援助:</Chinesesimp>
+    <Spanish>Cualquiera puede dar ayuda:</Spanish>
+    <French>Tout le monde peut donner de l'aide:</French>
+    <Portuguese>Qualquer um pode dar ajuda:</Portuguese>
+    <Russian>Помощь может раздавать любой:</Russian></Key>
+<!-- AI-translated; native-speaker review welcome -->
+<Key ID="STR_ALIVE_CIV_POP_ALLOW_AID_ANYONE_COMMENT">
+    <English>Yes lets every player give food and water to civilians, even when Limit Interaction is set. Questions, commands and intel stay with the players in Limit Interaction. Adds Give Food and Give Water to the ACE civilian menu and to the scroll-wheel menu, shown when the player carries a Humanitarian Item.</English>
+    <French>Oui permet à chaque joueur de donner nourriture et eau aux civils, même si Limiter l'interaction est défini. Les questions, ordres et renseignements restent réservés aux joueurs listés dans Limiter l'interaction. Ajoute Donner nourriture et Donner eau au menu ACE des civils et au menu molette, affichés quand le joueur porte un objet humanitaire.</French>
+    <Portuguese>Sim permite que qualquer jogador dê comida e água aos civis, mesmo com Limitar Interação definido. Perguntas, ordens e informações continuam com os jogadores em Limitar Interação. Adiciona Dar Comida e Dar Água ao menu ACE dos civis e ao menu da roda do rato, mostrados quando o jogador leva um item humanitário.</Portuguese>
+    <Russian>Да: любой игрок может давать гражданским еду и воду, даже если задано Ограничение взаимодействия. Вопросы, команды и разведка остаются за игроками из Ограничения взаимодействия. Добавляет Дать еду и Дать воду в меню ACE для гражданских и в меню колеса мыши, если у игрока есть гуманитарный предмет.</Russian>
+    <Spanish>Sí permite que cualquier jugador dé comida y agua a los civiles, aunque Limitar interacción esté definido. Las preguntas, órdenes e inteligencia siguen limitadas a los jugadores de Limitar interacción. Añade Dar comida y Dar agua al menú ACE de civiles y al menú de la rueda del ratón, visibles cuando el jugador lleva un objeto humanitario.</Spanish>
+    <Chinese>選「是」時，即使設定了限制互動，所有玩家都能向平民發放食物和水。詢問、命令和情報仍只限限制互動名單中的玩家。會在ACE平民選單和滑鼠滾輪選單加入「給予食物」與「給予飲水」，玩家攜帶人道物資時顯示。</Chinese>
+    <Chinesesimp>选“是”时，即使设置了限制互动，所有玩家都能向平民发放食物和水。询问、命令和情报仍只限限制互动名单中的玩家。会在ACE平民菜单和鼠标滚轮菜单加入“给予食物”和“给予饮水”，玩家携带人道物资时显示。</Chinesesimp>
+</Key>
+<!-- AI-translated; native-speaker review welcome -->
 <Key ID="STR_ALIVE_CIV_POP_HUMANITARIAN_ITEMS">
     <English>Humanitarian Items:</English>
     <Chinese>人道物資:</Chinese>

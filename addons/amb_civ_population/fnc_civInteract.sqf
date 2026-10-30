@@ -126,11 +126,22 @@ switch (_operation) do {
 			_maxAllowAid = parseNumber (_logic getVariable["maxAllowAid", "3"]);
 			_authorized = (_logic getVariable "limitInteraction") call ALiVE_fnc_stringListToArray;
 
+			// Allow Anyone To Give Aid. Missions saved before the attribute existed have
+			// nothing stored and stay off. Eden can hand the Combo value over as a BOOL or
+			// as a "true" / "false" STRING, so both are read.
+			private _allowAidAnyoneRaw = _logic getVariable ["allowAidAnyone", false];
+			private _allowAidAnyone = if (_allowAidAnyoneRaw isEqualType "") then {
+				(toLower _allowAidAnyoneRaw) == "true"
+			} else {
+				_allowAidAnyoneRaw isEqualTo true
+			};
+
 			//-- Create interact handler object
 			MOD(civInteractHandler) = [nil,"create"] call MAINCLASS;
 			[MOD(civInteractHandler), "Debug", _debug] call ALiVE_fnc_hashSet;
 			[MOD(civInteractHandler), "InsurgentFaction", _factionEnemy] call ALiVE_fnc_hashSet;
 			[MOD(civInteractHandler), "authorized", _authorized] call ALiVE_fnc_hashSet;
+			[MOD(civInteractHandler), "allowAidAnyone", _allowAidAnyone] call ALiVE_fnc_hashSet;
 
 			// -- Store init data
 			_humanitarianData = [] call ALiVE_fnc_hashCreate;
@@ -1427,10 +1438,14 @@ switch (_operation) do {
 	};
 
 	case "giveItem": {
-		_arguments params ["_itemType"];
+		// Optional second argument: the civilian. The dialog buttons pass only the item
+		// type and the civilian comes from the open dialog ("Civ"); case "giveAid" passes
+		// it directly so aid can be given without the dialog.
+		_arguments params ["_itemType", ["_civArg", objNull, [objNull]]];
 		private ["_civ", "_humanitarian", "_item", "_decreaseChance", "_maxAllowAid", "_consumed"];
 
-		_civ = [_logic, "Civ"] call ALiVE_fnc_hashGet;
+		_civ = if (isNull _civArg) then { [_logic, "Civ"] call ALiVE_fnc_hashGet } else { _civArg };
+		if (isNil "_civ" || {isNull _civ} || {!alive _civ}) exitWith {};
 		_humanitarian = [_logic, "humanitarianData"] call ALiVE_fnc_hashGet;
 		_items = [_humanitarian, _itemType] call ALiVE_fnc_hashGet;
 		_decreaseChance = [_humanitarian, "hostilityDecrease"] call ALiVE_fnc_hashGet;
@@ -1470,7 +1485,9 @@ switch (_operation) do {
 		};
 
 
-		_civ setVariable[QGVAR(consumedItems), (_consumed + 1)];
+		// Broadcast, so Humanitarian Aid Limit counts every player's aid to this civilian.
+		// Kept on this machine only, each player could give the full limit.
+		_civ setVariable[QGVAR(consumedItems), (_consumed + 1), true];
 		// The "putdown" hand-over gesture raises the player's weapon at its end, so
 		// a player who interacted with the weapon lowered ends up aiming at the civ
 		// -- unwanted tension (and it can trip the weapon-aim civ reaction). The
@@ -1500,6 +1517,39 @@ switch (_operation) do {
 			[_logic, "UpdateHostility", [_civ, -7]] call MAINCLASS;
 			[_logic, "refreshHostilityIndicator"] call MAINCLASS;
 		};
+	};
+
+	//-- Aid without the dialog: the Give Food / Give Water entries in the ACE civilian
+	//   branch and the scroll-wheel actions that Allow Anyone To Give Aid adds. Runs the
+	//   same giveItem as the dialog buttons (aid limit, item check, gesture, hostility),
+	//   behind a short ACE progress bar when ACE is loaded and at once without it.
+	//   With no dialog open, refreshHostilityIndicator finds no CivData and does nothing,
+	//   and UpdateHostility still hands the change on to the server.
+	case "giveAid": {
+		_arguments params [["_civ", objNull, [objNull]], ["_itemType", "", [""]]];
+		if (isNull _civ || {!alive _civ}) exitWith {};
+		//-- Leave an open dialog's civilian alone
+		if (!isNull findDisplay 923) exitWith {};
+
+		if (isNil "ace_common_fnc_progressBar") exitWith {
+			[_logic, "giveItem", [_itemType, _civ]] call MAINCLASS;
+		};
+
+		private _title = if (_itemType == "waterItems") then {"Handing over water"} else {"Handing over food"};
+		[
+			2,
+			[_logic, _civ, _itemType],
+			{
+				(_this select 0) params ["_logic", "_civ", "_itemType"];
+				[_logic, "giveItem", [_itemType, _civ]] call ALiVE_fnc_civInteract;
+			},
+			{},
+			_title,
+			{
+				(_this select 0) params ["", "_civ"];
+				alive _civ && {player distance _civ < 5}
+			}
+		] call ace_common_fnc_progressBar;
 	};
 };
 

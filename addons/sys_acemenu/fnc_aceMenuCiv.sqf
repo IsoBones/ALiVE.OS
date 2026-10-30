@@ -26,9 +26,12 @@ Description:
           |    |-- Kneel
           |    |-- Get Down
           |    `-- Detain / Release
-          `-- Intel
-               |-- Negotiate
-               `-- Gather Intel
+          |-- Intel
+          |    |-- Negotiate
+          |    `-- Gather Intel
+          `-- Aid                  (Allow Anyone To Give Aid only)
+               |-- Give Food
+               `-- Give Water
 
     Civilian identification uses the class CONFIG side (CfgVehicles side
     == 3) rather than the unit's runtime side. This matters because
@@ -36,6 +39,12 @@ Description:
     reassigns the runtime side to the player's faction and would
     otherwise hide the branch on any subsequent ACE open against the
     same civilian.
+
+    The ALiVE root opens for a player who passes the `limitInteraction`
+    gate OR, with the `allowAidAnyone` attribute on, carries a Humanitarian
+    Item. Talk, Commands, Coercion and Intel keep the `limitInteraction`
+    gate; Aid is gated on ALiVE_fnc_civAidGate alone, so a player outside
+    the list sees only the Aid entries.
 
     Registration is gated on the amb_civ_population civilianInteractionUI
     attribute. Only fires when the resolved mode is AUTO or ACE - in
@@ -134,6 +143,29 @@ private _condBelowHostile = {
     {[_target, 80] call ALiVE_fnc_civAceTierGate}
 };
 
+// Root: base condition without the authorisation gate, then open for an
+// authorised player or, with Allow Anyone To Give Aid on, for anyone carrying
+// a Humanitarian Item. Every child but Aid still carries civAceAuthGate, so a
+// player outside `limitInteraction` sees only Aid.
+private _rootCond = {
+    alive _target &&
+    {(getNumber (configFile >> "CfgVehicles" >> typeOf _target >> "side")) == 3} &&
+    {!(_target getVariable ["ALiVE_advciv_blacklist", false])} &&
+    {(call ALiVE_fnc_civAceAuthGate) || {[""] call ALiVE_fnc_civAidGate}}
+};
+
+// Aid: Allow Anyone To Give Aid entries. No authorisation gate and no
+// hostility tier gate, matching the dialog, which keeps Ration and Water
+// available at every tier so aid can bring a civilian back down. Hidden on
+// an armed civilian, matching the dialog's exit in case "openMenu".
+private _aidCond = {
+    alive _target &&
+    {(getNumber (configFile >> "CfgVehicles" >> typeOf _target >> "side")) == 3} &&
+    {!(_target getVariable ["ALiVE_advciv_blacklist", false])} &&
+    {primaryWeapon _target == "" && {handgunWeapon _target == ""}} &&
+    {[""] call ALiVE_fnc_civAidGate}
+};
+
 // ------------------------------------------------------------------------
 // Root: ALiVE submenu on civilian targets, under ACE's standard target-
 // action parent (ACE_MainActions). Inheritance flag (true) is essential
@@ -141,7 +173,7 @@ private _condBelowHostile = {
 // classnames players actually interact with (C_man_1, C_Driver_1_F, ...).
 // ------------------------------------------------------------------------
 private _root = [
-    "ALiVE_Civilian", "ALiVE", QMENUICON(main), {}, _baseCond
+    "ALiVE_Civilian", "ALiVE", QMENUICON(main), {}, _rootCond
 ] call ace_interact_menu_fnc_createAction;
 ["CAManBase", 0, ["ACE_MainActions"], _root, true] call ace_interact_menu_fnc_addActionToClass;
 
@@ -149,6 +181,7 @@ private _pAlive    = ["ACE_MainActions", "ALiVE_Civilian"];
 private _pCmd      = _pAlive + ["ALiVE_Civ_Commands"];
 private _pCoercion = _pAlive + ["ALiVE_Civ_Coercion"];
 private _pIntel    = _pAlive + ["ALiVE_Civ_Intel"];
+private _pAid      = _pAlive + ["ALiVE_Civ_Aid"];
 
 // ------------------------------------------------------------------------
 // Submenu containers (empty-action nodes that group verbs below them).
@@ -167,6 +200,11 @@ private _intelRoot = [
     "ALiVE_Civ_Intel", "Intel", "", {}, _baseCond
 ] call ace_interact_menu_fnc_createAction;
 ["CAManBase", 0, _pAlive, _intelRoot, true] call ace_interact_menu_fnc_addActionToClass;
+
+private _aidRoot = [
+    "ALiVE_Civ_Aid", "Aid", "", {}, _aidCond
+] call ace_interact_menu_fnc_createAction;
+["CAManBase", 0, _pAlive, _aidRoot, true] call ace_interact_menu_fnc_addActionToClass;
 
 // ------------------------------------------------------------------------
 // Top-level leaf: Talk (opens the dialog). Mirrors fnc_addCivilianInteraction's
@@ -210,6 +248,7 @@ _a = ["ALiVE_Civ_GetIn", "Get In Vehicle", "",
         alive _target &&
         {(getNumber (configFile >> "CfgVehicles" >> typeOf _target >> "side")) == 3} &&
         {!(_target getVariable ["ALiVE_advciv_blacklist", false])} &&
+        {call ALiVE_fnc_civAceAuthGate} &&
         {[_target, 60] call ALiVE_fnc_civAceTierGate} &&
         {isNil "ALiVE_advciv_enabled" || {!ALiVE_advciv_enabled} || {_target getVariable ["ALiVE_advciv_active", false]} || {group _target == group player && {!isNil {_target getVariable "ALiVE_advciv_homePos"}}}} &&
         {vehicle _target == _target} &&
@@ -235,6 +274,7 @@ _a = ["ALiVE_Civ_GetOut", "Get Out Vehicle", "",
         alive _target &&
         {(getNumber (configFile >> "CfgVehicles" >> typeOf _target >> "side")) == 3} &&
         {!(_target getVariable ["ALiVE_advciv_blacklist", false])} &&
+        {call ALiVE_fnc_civAceAuthGate} &&
         {[_target, 60] call ALiVE_fnc_civAceTierGate} &&
         {isNil "ALiVE_advciv_enabled" || {!ALiVE_advciv_enabled} || {_target getVariable ["ALiVE_advciv_active", false]} || {group _target == group player && {!isNil {_target getVariable "ALiVE_advciv_homePos"}}}} &&
         {vehicle _target != _target}
@@ -296,6 +336,7 @@ _a = ["ALiVE_Civ_Negotiate", "Negotiate", "",
         alive _target &&
         {(getNumber (configFile >> "CfgVehicles" >> typeOf _target >> "side")) == 3} &&
         {!(_target getVariable ["ALiVE_advciv_blacklist", false])} &&
+        {call ALiVE_fnc_civAceAuthGate} &&
         {[_target, 60] call ALiVE_fnc_civAceTierGate} &&
         {
             (_target getVariable ["townelder", false]) ||
@@ -316,10 +357,28 @@ _a = ["ALiVE_Civ_GatherIntel", "Gather Intel", "",
         alive _target &&
         {(getNumber (configFile >> "CfgVehicles" >> typeOf _target >> "side")) == 3} &&
         {!(_target getVariable ["ALiVE_advciv_blacklist", false])} &&
+        {call ALiVE_fnc_civAceAuthGate} &&
         {[_target, 60] call ALiVE_fnc_civAceTierGate} &&
         {isNil {_target getVariable "intelGathered"}}
     }
 ] call ace_interact_menu_fnc_createAction;
 ["CAManBase", 0, _pIntel, _a, true] call ace_interact_menu_fnc_addActionToClass;
+
+// ------------------------------------------------------------------------
+// Aid submenu (Allow Anyone To Give Aid). Each entry shows only while the
+// player carries that kind of Humanitarian Item. giveAid runs the dialog's
+// giveItem behind a short progress bar.
+// ------------------------------------------------------------------------
+_a = ["ALiVE_Civ_GiveFood", "Give Food", "",
+    { [ALiVE_civInteractHandler, "giveAid", [_target, "humratItems"]] call ALiVE_fnc_civInteract },
+    { ["humratItems"] call ALiVE_fnc_civAidGate }
+] call ace_interact_menu_fnc_createAction;
+["CAManBase", 0, _pAid, _a, true] call ace_interact_menu_fnc_addActionToClass;
+
+_a = ["ALiVE_Civ_GiveWater", "Give Water", "",
+    { [ALiVE_civInteractHandler, "giveAid", [_target, "waterItems"]] call ALiVE_fnc_civInteract },
+    { ["waterItems"] call ALiVE_fnc_civAidGate }
+] call ace_interact_menu_fnc_createAction;
+["CAManBase", 0, _pAid, _a, true] call ace_interact_menu_fnc_addActionToClass;
 
 ["ALiVE_sys_acemenu Civilian: registered hierarchical branch on CAManBase (UIMode=%1)", _uiMode] call ALiVE_fnc_dump;

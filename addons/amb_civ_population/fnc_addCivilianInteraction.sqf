@@ -116,4 +116,35 @@ if (_unit getVariable ["ALiVE_civInteract_resolved", false]) exitWith {};
             };
         };
     };
+
+    // Allow Anyone To Give Aid: Give Food / Give Water for every player, outside the
+    // dialog, so Limit Interaction no longer keeps aid to the listed players. Every mode
+    // but ACE, which gets the same entries from the ACE civilian branch. Each shows only
+    // while the player carries a matching Humanitarian Item (ALiVE_fnc_civAidGate), and
+    // not on an armed civilian, matching the dialog's own exit in case "openMenu".
+    if (_uiMode != "ACE" && {[ALiVE_civInteractHandler, "allowAidAnyone", false] call ALiVE_fnc_hashGet}) then {
+        private _armedCheck = " && {primaryWeapon _target == '' && {handgunWeapon _target == ''}}";
+        _unit addAction [
+            "Give Food",
+            {[ALiVE_civInteractHandler, "giveAid", [_this select 0, "humratItems"]] call ALiVE_fnc_civInteract},
+            "",
+            49,
+            true,
+            true,
+            "",
+            _cond + _armedCheck + " && {['humratItems'] call ALiVE_fnc_civAidGate}",
+            _range
+        ];
+        _unit addAction [
+            "Give Water",
+            {[ALiVE_civInteractHandler, "giveAid", [_this select 0, "waterItems"]] call ALiVE_fnc_civInteract},
+            "",
+            48,
+            true,
+            true,
+            "",
+            _cond + _armedCheck + " && {['waterItems'] call ALiVE_fnc_civAidGate}",
+            _range
+        ];
+    };
 };
